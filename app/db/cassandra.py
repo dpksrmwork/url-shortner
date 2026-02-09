@@ -16,7 +16,9 @@ class CassandraDB:
             [settings.cassandra_host], 
             port=settings.cassandra_port
         )
-        self.session = self.cluster.connect(settings.cassandra_keyspace)
+        # Connect without keyspace first, then use it
+        self.session = self.cluster.connect()
+        self.session.set_keyspace(settings.cassandra_keyspace)
         self._prepare_statements()
     
     def _prepare_statements(self):
