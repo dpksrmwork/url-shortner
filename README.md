@@ -25,28 +25,7 @@ FastAPI (Python) → Cassandra (NoSQL)
 
 ## Project Structure
 
-```
-url-shortner/
-├── app/
-│   ├── main.py              # FastAPI application
-│   ├── api/
-│   │   └── endpoints.py     # API routes
-│   ├── core/
-│   │   └── config.py        # Configuration
-│   ├── db/
-│   │   └── cassandra.py     # Database connection
-│   ├── models/
-│   │   └── schemas.py       # Pydantic models
-│   └── services/
-│       └── url_service.py   # Business logic
-├── cassandra/
-│   ├── init/
-│   │   └── 01-schema.cql    # Database schema
-│   └── README.md
-├── docker-compose.yml       # Cassandra container
-├── requirements.txt
-└── Makefile
-```
+See [STRUCTURE.md](STRUCTURE.md) for detailed project organization.
 
 ## Quick Start
 
@@ -163,14 +142,17 @@ curl http://localhost:8000/stats/ex
 
 ## Configuration
 
-Create `.env` file:
+Copy `.env.example` to `.env` and update values:
 
-```env
-CASSANDRA_HOST=localhost
-CASSANDRA_PORT=9042
-CASSANDRA_KEYSPACE=url_shortener
-BASE_URL=http://localhost:8000
+```bash
+cp .env.example .env
 ```
+
+Key variables:
+- `CASSANDRA_HOST`, `CASSANDRA_PORT`, `CASSANDRA_KEYSPACE`
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`
+- `KONG_PG_PASSWORD`, `GF_SECURITY_ADMIN_PASSWORD`
+- `BASE_URL`
 
 ## Development
 
@@ -202,24 +184,13 @@ Based on requirements:
 - **Read TPS**: 40,000 (peak: 200,000)
 - **Read:Write Ratio**: 100:1
 
-## Production Considerations
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed capacity planning.
 
-### Cassandra Configuration
-- Deploy 3+ nodes per datacenter
-- Use `NetworkTopologyStrategy` with RF=3
-- Set consistency level: QUORUM for writes, ONE for reads
-- Enable compression and compaction tuning
+## Documentation
 
-### Application Scaling
-- Deploy multiple stateless API instances
-- Use load balancer (NGINX/Kong)
-- Add Redis cache layer for hot URLs
-- Implement rate limiting
-
-### Monitoring
-- Track API latency (p50, p95, p99)
-- Monitor Cassandra metrics (read/write latency, disk usage)
-- Set up alerts for error rates and availability
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture and design
+- [docs/SECURITY.md](docs/SECURITY.md) - Security features
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
 
 ## License
 
