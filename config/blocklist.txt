@@ -1,0 +1,30 @@
+# URL Shortener Domain Blocklist
+# One domain per line, lines starting with # are comments
+# Subdomains of listed domains are also blocked
+
+# Known malware/phishing domains (sample list)
+# In production, integrate with threat intelligence feeds like:
+# - Google Safe Browsing API
+# - PhishTank
+# - URLhaus
+# - VirusTotal
+
+# Example blocked domains
+malware.example.com
+phishing.example.com
+evil.example.com
+
+# Suspicious URL shorteners (prevent shortener chains)
+bit.ly
+tinyurl.com
+goo.gl
+t.co
+ow.ly
+is.gd
+buff.ly
+adf.ly
+
+# Known spam domains
+spam-site.example.com
+
+# Add more domains as needed from threat intelligence feeds

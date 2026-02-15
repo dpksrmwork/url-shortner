@@ -1,48 +1,226 @@
-# url-shortner
+# URL Shortener
 
-1. Requirements Analysis
-Functional Requirements
-------------------------------------------------------------------------------
-    Shorten URLs: Generate unique short URLs for given long URLs
+High-performance URL shortening service built with FastAPI and Apache Cassandra.
 
-    Redirect: Redirect short URLs to original long URLs with minimal latency
+## Features
 
-    Custom Aliases: Support user-defined custom short URLs
+- ✅ Shorten long URLs to compact codes
+- ✅ Custom aliases support
+- ✅ URL deduplication (same URL → same short code)
+- ✅ Configurable TTL/expiration
+- ✅ Click tracking and analytics
+- ✅ 301 redirects for SEO
+- ✅ High availability with Cassandra
 
-    Expiration: URLs expire after configurable TTL
+## Architecture
 
-    Analytics: Track clicks, geographic data, referrers (non-real-time acceptable)
+```
+FastAPI (Python) → Cassandra (NoSQL)
+```
 
-    Deduplication: Same long URL → same short URL (1-to-1 mapping)
+**Tech Stack:**
+- **API**: FastAPI + Uvicorn
+- **Database**: Apache Cassandra 4.1
+- **Language**: Python 3.13
 
-Non-Functional Requirements
---------------------------------------------------------------------------------
-    High Availability: 99.9%+ uptime (AP from CAP theorem)
+## Project Structure
 
-    Low Latency: <100ms for redirects, <500ms for creation
+```
+url-shortner/
+├── app/
+│   ├── main.py              # FastAPI application
+│   ├── api/
+│   │   └── endpoints.py     # API routes
+│   ├── core/
+│   │   └── config.py        # Configuration
+│   ├── db/
+│   │   └── cassandra.py     # Database connection
+│   ├── models/
+│   │   └── schemas.py       # Pydantic models
+│   └── services/
+│       └── url_service.py   # Business logic
+├── cassandra/
+│   ├── init/
+│   │   └── 01-schema.cql    # Database schema
+│   └── README.md
+├── docker-compose.yml       # Cassandra container
+├── requirements.txt
+└── Makefile
+```
 
-    Scalability: Handle billions of URLs, millions of requests/second
+## Quick Start
 
-    Durability: URLs persist for years
+### 1. Start Cassandra
 
-    Security: Prevent malicious URLs, spam protection, non-predictable short codes
+```bash
+make cassandra-up
+make cassandra-init
+```
 
-    Read-Heavy: 100:1 read-to-write ratio typical
+### 2. Install Dependencies
 
-Capacity Estimation
--------------------------------------------------------------------------------
-assume 1B urls per month, 1 KB per record 
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+make install
+```
 
-storage
-1B * 12 months * 3 Year * 1KB = 36 B
+### 3. Run Application
 
-HA 3 * 36 TB = 108 TB
+```bash
+make run
+```
 
+API available at: http://localhost:8000
 
-Traffic
-writes 1B /30/24/60/60 ~ 400TPS, peak 2000TPS
-reads 100 * 400 = 40000 TPS, peak 200000TPS
+## API Documentation
 
+### Create Short URL
 
-2. High Level Design
+```bash
+POST /shorten
+Content-Type: application/json
 
+{
+  "url": "https://example.com/very/long/url",
+  "custom_alias": "mylink",      # Optional
+  "user_id": "user123",           # Optional
+  "ttl_days": 365                 # Optional, default 1095 (3 years)
+}
+```
+
+**Response:**
+```json
+{
+  "short_code": "mylink",
+  "short_url": "http://localhost:8000/mylink",
+  "long_url": "https://example.com/very/long/url"
+}
+```
+
+### Redirect to Original URL
+
+```bash
+GET /{short_code}
+```
+
+Returns 301 redirect to original URL and increments click counter.
+
+### Get URL Statistics
+
+```bash
+GET /stats/{short_code}
+```
+
+**Response:**
+```json
+{
+  "short_code": "mylink",
+  "long_url": "https://example.com/very/long/url",
+  "clicks": 42,
+  "expires_at": "2026-01-15T10:30:00"
+}
+```
+
+## Examples
+
+```bash
+# Shorten URL
+curl -X POST http://localhost:8000/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://github.com/example/repo"}'
+
+# Custom alias
+curl -X POST http://localhost:8000/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "custom_alias": "ex"}'
+
+# Redirect
+curl -L http://localhost:8000/ex
+
+# Get stats
+curl http://localhost:8000/stats/ex
+```
+
+## Database Schema
+
+### Tables
+
+**urls** - Main URL storage
+- `short_code` (PK): Unique identifier
+- `long_url`: Original URL
+- `created_at`: Creation timestamp
+- `expires_at`: Expiration timestamp
+- `user_id`: Optional user identifier
+
+**url_clicks** - Click counters
+- `short_code` (PK)
+- `click_count`: Counter column
+
+**url_dedup** - Deduplication index
+- `url_hash` (PK): SHA-256 hash of long URL
+- `short_code`: Associated short code
+
+## Configuration
+
+Create `.env` file:
+
+```env
+CASSANDRA_HOST=localhost
+CASSANDRA_PORT=9042
+CASSANDRA_KEYSPACE=url_shortener
+BASE_URL=http://localhost:8000
+```
+
+## Development
+
+```bash
+# Start Cassandra
+make cassandra-up
+
+# Initialize schema
+make cassandra-init
+
+# Access CQL shell
+make cassandra-shell
+
+# Check cluster status
+make cassandra-status
+
+# Run application
+make run
+
+# Stop Cassandra
+make cassandra-down
+```
+
+## Capacity Planning
+
+Based on requirements:
+- **Storage**: 36TB for 1B URLs/month over 3 years
+- **Write TPS**: 400 (peak: 2000)
+- **Read TPS**: 40,000 (peak: 200,000)
+- **Read:Write Ratio**: 100:1
+
+## Production Considerations
+
+### Cassandra Configuration
+- Deploy 3+ nodes per datacenter
+- Use `NetworkTopologyStrategy` with RF=3
+- Set consistency level: QUORUM for writes, ONE for reads
+- Enable compression and compaction tuning
+
+### Application Scaling
+- Deploy multiple stateless API instances
+- Use load balancer (NGINX/Kong)
+- Add Redis cache layer for hot URLs
+- Implement rate limiting
+
+### Monitoring
+- Track API latency (p50, p95, p99)
+- Monitor Cassandra metrics (read/write latency, disk usage)
+- Set up alerts for error rates and availability
+
+## License
+
+MIT

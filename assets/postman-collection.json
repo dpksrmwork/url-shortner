@@ -1,0 +1,403 @@
+{
+	"info": {
+		"_postman_id": "url-shortener-collection",
+		"name": "URL Shortener API",
+		"description": "Complete API collection for URL Shortener service with FastAPI, Kong, and Kubernetes",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "URL Operations",
+			"item": [
+				{
+					"name": "Shorten URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://github.com/kubernetes/kubernetes\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shorten",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shorten"
+							]
+						},
+						"description": "Create a short URL with auto-generated code"
+					},
+					"response": []
+				},
+				{
+					"name": "Shorten URL with Custom Alias",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://kubernetes.io/docs\",\n  \"custom_alias\": \"k8s-docs\",\n  \"user_id\": \"user123\",\n  \"ttl_days\": 365\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shorten",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shorten"
+							]
+						},
+						"description": "Create a short URL with custom alias and TTL"
+					},
+					"response": []
+				},
+				{
+					"name": "Redirect to Long URL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/{{short_code}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"{{short_code}}"
+							]
+						},
+						"description": "Redirect to original URL (301 redirect)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get URL Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/stats/{{short_code}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"stats",
+								"{{short_code}}"
+							]
+						},
+						"description": "Get click statistics for a short URL"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Kong Admin API",
+			"item": [
+				{
+					"name": "Kong Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kong_admin_url}}/status",
+							"host": [
+								"{{kong_admin_url}}"
+							],
+							"path": [
+								"status"
+							]
+						},
+						"description": "Check Kong gateway status"
+					},
+					"response": []
+				},
+				{
+					"name": "List Services",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kong_admin_url}}/services",
+							"host": [
+								"{{kong_admin_url}}"
+							],
+							"path": [
+								"services"
+							]
+						},
+						"description": "List all Kong services"
+					},
+					"response": []
+				},
+				{
+					"name": "List Routes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kong_admin_url}}/routes",
+							"host": [
+								"{{kong_admin_url}}"
+							],
+							"path": [
+								"routes"
+							]
+						},
+						"description": "List all Kong routes"
+					},
+					"response": []
+				},
+				{
+					"name": "List Plugins",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kong_admin_url}}/plugins",
+							"host": [
+								"{{kong_admin_url}}"
+							],
+							"path": [
+								"plugins"
+							]
+						},
+						"description": "List all Kong plugins"
+					},
+					"response": []
+				},
+				{
+					"name": "Prometheus Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kong_admin_url}}/metrics",
+							"host": [
+								"{{kong_admin_url}}"
+							],
+							"path": [
+								"metrics"
+							]
+						},
+						"description": "Get Prometheus metrics from Kong"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Monitoring",
+			"item": [
+				{
+					"name": "Prometheus Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{prometheus_url}}/-/healthy",
+							"host": [
+								"{{prometheus_url}}"
+							],
+							"path": [
+								"-",
+								"healthy"
+							]
+						},
+						"description": "Check Prometheus health"
+					},
+					"response": []
+				},
+				{
+					"name": "Prometheus Targets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{prometheus_url}}/api/v1/targets",
+							"host": [
+								"{{prometheus_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"targets"
+							]
+						},
+						"description": "List Prometheus scrape targets"
+					},
+					"response": []
+				},
+				{
+					"name": "Query Request Rate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{prometheus_url}}/api/v1/query?query=rate(kong_http_requests_total[5m])",
+							"host": [
+								"{{prometheus_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"query"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "rate(kong_http_requests_total[5m])"
+								}
+							]
+						},
+						"description": "Query request rate from Prometheus"
+					},
+					"response": []
+				},
+				{
+					"name": "Grafana Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{grafana_url}}/api/health",
+							"host": [
+								"{{grafana_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Check Grafana health"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Scenarios",
+			"item": [
+				{
+					"name": "Bulk Create URLs",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://example.com/page-{{$randomInt}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shorten",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shorten"
+							]
+						},
+						"description": "Create multiple URLs for load testing (use Collection Runner)"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Rate Limiting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://test.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shorten",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shorten"
+							]
+						},
+						"description": "Test rate limiting (100 req/min). Run multiple times to trigger limit."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Deduplication",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://github.com/kubernetes/kubernetes\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shorten",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shorten"
+							]
+						},
+						"description": "Submit same URL multiple times - should return same short_code"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "kong_admin_url",
+			"value": "http://localhost:8001",
+			"type": "string"
+		},
+		{
+			"key": "prometheus_url",
+			"value": "http://localhost:9090",
+			"type": "string"
+		},
+		{
+			"key": "grafana_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "short_code",
+			"value": "abc123",
+			"type": "string"
+		}
+	]
+}

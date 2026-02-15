@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-migration
+  namespace: url-shortener
+spec:
+  template:
+    spec:
+      containers:
+      - name: kong-migration
+        image: kong:3.4
+        command: ["kong", "migrations", "bootstrap"]
+        env:
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_PG_HOST
+          value: kong-database
+        - name: KONG_PG_USER
+          value: kong
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: url-shortener-secrets
+              key: kong-pg-password
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong
+  namespace: url-shortener
+spec:
+  type: LoadBalancer
+  ports:
+  - name: proxy
+    port: 8000
+    targetPort: 8000
+  - name: proxy-ssl
+    port: 443
+    targetPort: 8443
+  - name: admin
+    port: 8001
+    targetPort: 8001
+  selector:
+    app: kong
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  namespace: url-shortener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      containers:
+      - name: kong
+        image: kong:3.4
+        ports:
+        - containerPort: 8000
+        - containerPort: 8443
+        - containerPort: 8001
+        env:
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_PG_HOST
+          value: kong-database
+        - name: KONG_PG_USER
+          value: kong
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: url-shortener-secrets
+              key: kong-pg-password
+        - name: KONG_ADMIN_LISTEN
+          value: "0.0.0.0:8001"
+        - name: KONG_PROXY_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: /dev/stdout
