@@ -152,10 +152,13 @@ class URLService:
         if not row:
             raise HTTPException(status_code=404, detail="URL not found")
         
-        if row.expires_at and datetime.now(timezone.utc) > row.expires_at:
-            # Remove expired URL from cache if it exists
-            cache.delete_url(short_code)
-            raise HTTPException(status_code=410, detail="URL expired")
+        if row.expires_at:
+            # Make expires_at timezone-aware if it's naive
+            expires_at = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires_at:
+                # Remove expired URL from cache if it exists
+                cache.delete_url(short_code)
+                raise HTTPException(status_code=410, detail="URL expired")
         
         # Step 3: Cache the result for future requests
         cache.set_url(short_code, row.long_url)
