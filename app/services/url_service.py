@@ -17,6 +17,9 @@ from app.db.redis import cache
 from app.models.schemas import ShortenRequest, ShortenResponse, URLStats
 from app.core.config import settings
 from app.core.security import SecurityValidator
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class URLService:
@@ -142,7 +145,8 @@ class URLService:
         cached_url = cache.get_url(short_code)
         if cached_url:
             # Increment click count asynchronously (fire-and-forget)
-            db.session.execute_async(db.prepared_statements['increment_clicks'], [short_code])
+            future = db.session.execute_async(db.prepared_statements['increment_clicks'], [short_code])
+            future.add_errback(lambda exc: logger.error(f"Click async increment failed: {exc}"))
             return cached_url
         
         # Step 2: Cache miss - query Cassandra
@@ -164,7 +168,8 @@ class URLService:
         cache.set_url(short_code, row.long_url)
         
         # Step 4: Increment click count asynchronously
-        db.session.execute_async(db.prepared_statements['increment_clicks'], [short_code])
+        future = db.session.execute_async(db.prepared_statements['increment_clicks'], [short_code])
+        future.add_errback(lambda exc: logger.error(f"Click async increment failed: {exc}"))
         
         return row.long_url
     

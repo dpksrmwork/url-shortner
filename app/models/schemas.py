@@ -66,8 +66,8 @@ class ShortenRequest(BaseModel):
         """Sanitize user ID."""
         if v is None:
             return v
-        # Remove potentially dangerous characters
-        sanitized = re.sub(r'[<>"\']', '', v)
+        # Only allow alphanumeric characters, hyphens, underscores, and dots
+        sanitized = re.sub(r'[^a-zA-Z0-9_.-]', '', v)
         return sanitized[:100]  # Enforce max length
     
     @field_validator('url')
@@ -115,5 +115,3 @@ class HealthResponse(BaseModel):
     """Health check response."""
     
     status: str = Field(..., description="Service status")
-    cassandra: str = Field(..., description="Cassandra connection status")
-    redis: str = Field(..., description="Redis connection status")

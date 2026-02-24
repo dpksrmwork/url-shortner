@@ -33,6 +33,18 @@ class InMemoryRateLimiter:
     def __init__(self):
         self._requests: dict[str, list[float]] = defaultdict(list)
         self._lock = asyncio.Lock()
+        self._cleanup_task = None
+    
+    async def _cleanup_loop(self):
+        while True:
+            try:
+                await asyncio.sleep(300)  # Clean up every 5 minutes
+                await self.cleanup()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"RateLimiter cleanup error: {e}")
+                await asyncio.sleep(60)
     
     async def is_allowed(self, key: str, limit: int, window: int) -> tuple[bool, int, int]:
         """
@@ -41,6 +53,9 @@ class InMemoryRateLimiter:
         Returns:
             (allowed, remaining, reset_time)
         """
+        if self._cleanup_task is None:
+            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+            
         async with self._lock:
             now = time.time()
             window_start = now - window
@@ -102,18 +117,21 @@ class RedisRateLimiter:
             window_start = now - window
             pipe_key = f"ratelimit:{key}"
             
-            pipe = self.redis.pipeline()
-            pipe.zremrangebyscore(pipe_key, 0, window_start)
-            pipe.zadd(pipe_key, {str(now): now})
-            pipe.zcard(pipe_key)
-            pipe.expire(pipe_key, window)
-            results = pipe.execute()
+            def redis_ops():
+                pipe = self.redis.pipeline()
+                pipe.zremrangebyscore(pipe_key, 0, window_start)
+                pipe.zadd(pipe_key, {str(now): now})
+                pipe.zcard(pipe_key)
+                pipe.expire(pipe_key, window)
+                return pipe.execute()
+                
+            results = await asyncio.to_thread(redis_ops)
             
             current_count = results[2]
             
             if current_count > limit:
                 # Remove the request we just added
-                self.redis.zrem(pipe_key, str(now))
+                await asyncio.to_thread(self.redis.zrem, pipe_key, str(now))
                 return False, 0, window
             
             remaining = limit - current_count

@@ -31,13 +31,25 @@ async def lifespan(app: FastAPI):
     """Manage application lifecycle - connect/disconnect databases."""
     logger.info("Starting URL Shortener service...")
     
-    # Connect to databases
-    try:
-        db.connect()
-        logger.info("Connected to Cassandra")
-    except Exception as e:
-        logger.error(f"Failed to connect to Cassandra: {e}")
-        raise
+    # Connect to databases with retry logic for Cassandra
+    max_retries = 5
+    retry_delay = 2
+    for attempt in range(max_retries):
+        try:
+            # db.connect is synchronous, but during startup it's acceptable,
+            # though using to_thread avoids blocking the loop if there's a timeout
+            import asyncio
+            await asyncio.to_thread(db.connect)
+            logger.info("Connected to Cassandra")
+            break
+        except Exception as e:
+            logger.warning(f"Failed to connect to Cassandra (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                logger.error("Exhausted retries connecting to Cassandra")
+                raise
     
     try:
         cache.connect()
@@ -70,7 +82,7 @@ app = FastAPI(
 # 1. Security Headers - adds security headers to all responses
 app.add_middleware(
     SecurityHeadersMiddleware,
-    enable_hsts=False  # Enable when running behind HTTPS
+    enable_hsts=True  # HTTPS enabled via Kong gateway
 )
 
 # 2. Rate Limiting - prevents abuse

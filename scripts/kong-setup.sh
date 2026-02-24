@@ -35,12 +35,35 @@ echo "Creating routes..."
 curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
   --data 'paths[]=/shorten' \
   --data 'methods[]=POST' \
-  --data name=shorten-route
+  --data name=shorten-route \
+  --data strip_path=false
 
 # Route for stats endpoint
 curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
   --data 'paths[]=/stats' \
-  --data name=stats-route
+  --data name=stats-route \
+  --data strip_path=false
+
+# Route for health endpoint
+curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
+  --data 'paths[]=/health' \
+  --data 'methods[]=GET' \
+  --data name=health-route \
+  --data strip_path=false
+
+# Route for docs endpoint
+curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
+  --data 'paths[]=/docs' \
+  --data 'methods[]=GET' \
+  --data name=docs-route \
+  --data strip_path=false
+
+# Route for openapi.json
+curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
+  --data 'paths[]=/openapi.json' \
+  --data 'methods[]=GET' \
+  --data name=openapi-route \
+  --data strip_path=false
 
 # Route for redirect (catch-all)
 curl -i -X POST http://localhost:8001/services/url-shortener-service/routes \
@@ -87,6 +110,7 @@ curl -i -X POST http://localhost:8001/plugins \
 echo "Kong configuration completed!"
 echo ""
 echo "Access points:"
-echo "  - API Gateway: http://localhost:8000"
-echo "  - Kong Admin: http://localhost:8001"
-echo "  - Prometheus Metrics: http://localhost:8001/metrics"
+echo "  - HTTP Gateway:  http://localhost"
+echo "  - HTTPS Gateway: https://localhost"
+echo "  - Kong Admin:    http://localhost:8001"
+echo "  - Prometheus:    http://localhost:8001/metrics"

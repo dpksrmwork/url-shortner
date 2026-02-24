@@ -232,7 +232,7 @@ Use Kubernetes Secrets for passwords:
 
 ```bash
 kubectl create secret generic kong-db-secret \
-  --from-literal=password=kongpass \
+  --from-literal=password=YOUR_SECURE_PASSWORD \
   -n url-shortener
 ```
 

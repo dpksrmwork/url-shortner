@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Health check",
+    description="Check if the service is running"
+)
+def health_check():
+    """Health check endpoint."""
+    return HealthResponse(status="healthy")
+
+
 @router.post(
     "/shorten", 
     response_model=ShortenResponse,

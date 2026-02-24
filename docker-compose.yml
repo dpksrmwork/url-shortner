@@ -72,8 +72,12 @@ services:
         condition: service_completed_successfully
     restart: on-failure
     ports:
-      - "80:8000"   # HTTP
+      - "80:8000" # HTTP Proxy
+      - "443:8443" # HTTPS Proxy
       - "8001:8001" # Admin API
+    volumes:
+      - ./ssl/certs/cert.pem:/etc/kong/ssl/cert.pem:ro
+      - ./ssl/certs/key.pem:/etc/kong/ssl/key.pem:ro
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
@@ -84,6 +88,9 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_SSL_CERT: /etc/kong/ssl/cert.pem
+      KONG_SSL_CERT_KEY: /etc/kong/ssl/key.pem
+      KONG_PROXY_LISTEN: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
     healthcheck:
       test: [ "CMD", "kong", "health" ]
       interval: 10s
@@ -149,7 +156,7 @@ services:
       REDIS_PORT: 6379
       REDIS_DB: 0
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      BASE_URL: http://localhost
+      BASE_URL: https://localhost
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
